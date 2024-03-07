@@ -1,0 +1,5 @@
+name: "aks01"
+location: "uksouth"
+resource_group_name: "poc-rg-01"
+container_registry_name: "poccr"
+container_registry_sku: "Standard"
