@@ -35,6 +35,7 @@ resource "azurerm_kubernetes_cluster" "this" {
     type = "SystemAssigned"
   }
 
+  depends_on = [azurerm_resource_group.this]
 }
 
 resource "azurerm_kubernetes_cluster_node_pool" "this" {
@@ -44,6 +45,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "this" {
   kubernetes_cluster_id = azurerm_kubernetes_cluster.this[each.value.name].id
   os_type               = "Linux"
   mode                  = "User"
+  node_count = 1
 }
 
 #create an azure container registry
@@ -55,14 +57,15 @@ resource "azurerm_container_registry" "this" {
   location            = each.value.location
   sku                 = each.value.container_registry_sku
   admin_enabled       = true
+  
+  depends_on          = [azurerm_resource_group.this]
 }
 
 #give aks cluster access to the container registry
 resource "azurerm_role_assignment" "this" {
   for_each = var.kubernetes_clusters
 
-  principal_id         = azurerm_kubernetes_cluster.this[each.value.name].identity[0].principal_id
+  principal_id         = azurerm_kubernetes_cluster.this[each.value.name].kubelet_identity[0].object_id
   role_definition_name = "AcrPull"
   scope                = azurerm_container_registry.this[each.value.name].id
 }
-
