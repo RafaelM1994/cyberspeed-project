@@ -1,0 +1,34 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: aspnet-app
+  namespace: poc
+spec:
+  selector:
+    matchLabels:
+      app: aspnet-app
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: aspnet-app
+    spec:
+      containers:
+        - name: aspnet-app
+          image: "pocacr2024.azurecr.io/application:v2"
+          env:
+            - name: ASPNETCORE_URLS
+              value: "http://+:80"
+            - name: CONNECTION_STRING
+              value: server=mysql;user=root;database=mysql;port=3306;password=db-q5n2g
+              # valueFrom:
+              #   secretKeyRef:
+              #     name: db-password
+              #     key: password
+          resources:
+            requests:
+              memory: "64Mi"
+              cpu: "250m"
+            limits:
+              memory: "128Mi"
+              cpu: "500m"
