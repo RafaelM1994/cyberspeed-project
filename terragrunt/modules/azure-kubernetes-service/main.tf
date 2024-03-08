@@ -21,6 +21,11 @@ resource "azurerm_kubernetes_cluster" "this" {
   location            = each.value.location
   resource_group_name = each.value.resource_group_name
   dns_prefix          = each.value.name
+  network_profile {
+    network_plugin = "kubenet"
+    network_policy = "calico"
+
+  }
 
   default_node_pool {
     name                        = "default"
