@@ -78,7 +78,9 @@ In a real scenario however, the following naming convention would be applied to 
 
     We have now the application up and running.
 
-    3. Any additional considerations or notes related to containerization and scalability.
+## 3. Any additional considerations or notes related to containerization and scalability.
+
+  # Containerization Notes:
 
     - Network Policies have been implemented with Calico to ensure no pods will communicate to each other, the only traffic allowed in the cluster is:
     [Ingress -> Application -> Database] in this order, the reverse is not allowed.
@@ -103,3 +105,40 @@ In a real scenario however, the following naming convention would be applied to 
                     └── new-api.yaml
                 ├── statefulsets
                 └── ...
+
+    - Sealed Secrets are being used to make sure the Github won't have any secret exposed. It uses a CRD called sealedsecrets that encrypt secrets that only the controller can decrypt using assymetric key.
+    The normal kubernetes secret will be created in the cluster after applying the sealed secret, and the file can be uploaded to Github as any other file.
+
+    - Resource Limits are defined in all the deployments. It is the maximum amount of a resource to be used by a container. This means that the container can never consume more than the memory amount or CPU amount indicated. On the other hand, it is defined the minimum guaranteed amount of a resource that is reserved for a container.
+   
+    - Application deployment had its capabilities removed except for the net_bind_service that is needed to start its main process.
+
+  # Scalability Notes:
+
+    - Horizontal Pod Autoscaler: The HPA automatically increase or decrease the number of Pods in response to the workload's CPU consumption, in the application's case it is set to 50% with a minimum of 2 pods and maximum of 10.
+
+    - Node Affinity: To ensure the application pods never go to the system node pool, it is being used Node affinity, where it tells to use only the nodes with "XX" label, in this case, these pods will only be scheduled in the nodes with label "agentpool=pool1". The system node pool is reserved to the Kubernetes system functionalities only, such as DNS, proxy and any other engine required by the system.
+
+    - Pod AntiAffinity: Pods will NOT be scheduled on the same node as a Pod that matches the same label, e.g. 2 instances of aspnetapp, one goes to node01, and the other goes to node02
+
+    - Blue/Green deployment has been implemented in a single cluster by having 2 different deployments and changing the selector labels the service should point to;
+      To change it to green, simply run:
+      ```bash
+      kubectl apply -f \kubernetes\poc\application\services\aspnet-green.yaml
+      ```
+      To switch back:
+      ```bash
+      kubectl apply -f \kubernetes\poc\application\services\aspnet-blue.yaml
+      ```
+  
+  # Future Security Improvements
+
+    - Add users in the containers as non-root. Most of the images use root as default, which brings the challenge of creating another image from the base image just to set a different user.
+    
+    - Pods to user service accounts other than the default: By default, all pods use a service account called "default" on each namespace, and this should be changed to make sure each pod will access only their own secrets and volumes, and nothing else. This lowers the surface of attack in case of an account compromise.
+
+    - Remove mysql pods capabilities to make it more secure. 
+  
+  #Future Availability Improvements
+
+    - Kubernetes blue-green deployment into multi-region multiple clusters;
