@@ -12,3 +12,9 @@ spec:
         - podSelector:
             matchLabels:
               app: aspnet-app
+              deployment: blue
+    - from:
+        - podSelector:
+            matchLabels:
+              app: aspnet-app-green
+              deployment: green

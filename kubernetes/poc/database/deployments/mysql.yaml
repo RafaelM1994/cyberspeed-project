@@ -14,6 +14,15 @@ spec:
       labels:
         app: mysql
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: agentpool
+                operator: In
+                values:
+                - pool1
       containers:
       - image: mysql:8.3
         name: mysql

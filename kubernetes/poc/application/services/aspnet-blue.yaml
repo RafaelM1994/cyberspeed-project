@@ -4,8 +4,10 @@ metadata:
   name: aspnet
   namespace: poc
 spec:
+  type: ClusterIP
   selector:
     app: aspnet-app
+    deployment: blue
   ports:
     - protocol: TCP
       port: 80

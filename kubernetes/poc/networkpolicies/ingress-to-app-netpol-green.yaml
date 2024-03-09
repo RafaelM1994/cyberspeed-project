@@ -1,13 +1,13 @@
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
-  name: allow-ingress-to-app
+  name: allow-ingress-to-app-green
   namespace: poc
 spec:
   podSelector:
     matchLabels:
-      app: aspnet-app
-      deployment: blue
+      app: aspnet-app-green
+      deployment: green
   ingress:
     - from:
         - podSelector:
