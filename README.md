@@ -1,21 +1,37 @@
 # CyberSpeed Project
 Infrastructure as Code solution for deploying a scalable web application stack
 
-Naming convention on Azure resources was not applied on purposes, since this is a POC.
-In a real scenario however, the following naming convention would be applied to all resources and forced through Terraform/Terragrunt:
 
-    - {companyAbbreviation}-{EnvironmentName}-{ResourceType}-{BriefResourceDescription}
+## Instructions
 
-    An example on how some resources would look like:
+To get started with Terragrunt, you will need the following prerequisites:
+```bash
+Terraform v1.3.9 or later
+Terragrunt version v0.55.10 or later
+Azure Service Principal
+```
+Once you have the prerequisites, follow these steps:
 
-    AKS:
-    - cbs-dev-aks-cluster01
+Clone the repository:
 
-    Key Vault:
-    - cbs-dev-kv-central
+```bash
+git clone https://github.com/RafaelM1994/cyberspeed-project.git
+```
 
-    Storage Account:
-    - cbsdevsaterraform (here it must be all together as per the resource requirement)
+Add the following variables:
+```powershell
+$Env:TF_VAR_TF_STORAGE_ACCOUNT_NAME="value"
+$Env:TF_VAR_TF_CONTAINER_NAME="value"
+$Env:TF_VAR_TF_RESOURCE_GROUP_NAME="value"
+$Env:TF_VAR_ENVIRONMENT_NAME="value"
+$Env:TF_VAR_AZURE_CLIENT_ID = "value"
+$Env:TF_VAR_AZURE_CLIENT_SECRET = "value"
+$Env:TF_VAR_AZURE_SUBSCRIPTION_ID = "value"
+$Env:TF_VAR_AZURE_TENANT_ID = "value"
+```
+
+
+> Grant "Contributor" and "User Access Administrator" permissions to the service principal for it to create the resources and to grant permissions to AKS to access the ACR
 
 
 ## 1. Set up and configuring the containerized infrastructure
@@ -139,6 +155,30 @@ In a real scenario however, the following naming convention would be applied to 
 
     - Remove mysql pods capabilities to make it more secure. 
   
-  #Future Availability Improvements
+  # Future Availability Improvements
 
     - Kubernetes blue-green deployment into multi-region multiple clusters;
+  
+  # Future IAC Improvements
+
+    - More time is needed to finish ALL the manifest files to be deployed by Terraform, however, 2 modules (namespaces and ingresses) have been created to match the requirement of managing container configurations and deployments using IAC.
+
+
+
+## Naming Conventions
+
+  Naming convention on Azure resources was not applied on purpose, since this is a POC.
+  In a real scenario however, the following naming convention would be applied to all resources and forced through Terraform/Terragrunt:
+
+      - {companyAbbreviation}-{EnvironmentName}-{ResourceType}-{BriefResourceDescription}
+
+      An example on how some resources would look like:
+
+      AKS:
+      - cbs-dev-aks-cluster01
+
+      Key Vault:
+      - cbs-dev-kv-central
+
+      Storage Account:
+      - cbsdevsaterraform (here it must be all together as per the resource requirement)
