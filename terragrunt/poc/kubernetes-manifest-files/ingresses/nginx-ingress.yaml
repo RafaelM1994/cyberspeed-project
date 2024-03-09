@@ -1,0 +1,4 @@
+name: nginx-ingress
+service_name: aspnet
+service_port: 80
+path: "/"
