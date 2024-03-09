@@ -80,4 +80,26 @@ In a real scenario however, the following naming convention would be applied to 
 
     3. Any additional considerations or notes related to containerization and scalability.
 
-    
+    - Network Policies have been implemented with Calico to ensure no pods will communicate to each other, the only traffic allowed in the cluster is:
+    [Ingress -> Application -> Database] in this order, the reverse is not allowed.
+    Anything else is denied by a 'deny all' rule.
+
+    - Naming Convention has been applied to the Kubernetes manifest files:
+      - It starts with an environment folder;
+      - Within the folder it has all the applications (e.g. app1, new-api, database);
+      - within each folder, all the k8s components have their own folder (in plural, lowercase), and the file name will be the application name. To give an example:
+        .
+        └──dev
+            └── new-api
+                ├── configmaps
+                    └── new-api-infra.yaml
+                    └── new-api-general.yaml
+                ├── crons
+                ├── deployments
+                    └── new-api.yaml
+                ├── hpas
+                ├── pvcs
+                ├── services
+                    └── new-api.yaml
+                ├── statefulsets
+                └── ...
