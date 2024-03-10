@@ -112,7 +112,7 @@ jobs:
           ls
           #replace this content with the new image
           $oldImage = (get-content .\aspnet-green.yaml | select-string "image").ToString().Split('"')[1]
-          $newImage = "$acrName.azurecr.io/$dockerImage:$(Build.BuildNumber)"
+          $newImage = "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
 
           (Get-Content .\aspnet-green.yaml) | 
           ForEach-Object { $_ -replace $oldImage, $newImage } | Set-Content .\aspnet-green.yaml
