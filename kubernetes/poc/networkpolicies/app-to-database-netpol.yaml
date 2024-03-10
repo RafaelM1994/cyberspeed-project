@@ -18,3 +18,7 @@ spec:
             matchLabels:
               app: aspnet-app-green
               deployment: green
+    - from:
+        - podSelector:
+            matchLabels:
+              app: prometheus-server
