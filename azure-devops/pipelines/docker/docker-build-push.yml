@@ -66,12 +66,12 @@ jobs:
       inputs:
         script: |
 
-          $acrName = "${{ parameters.azureContainerRegistry }}"
-          $dockerImage = "${{ parameters.dockerImage }}"
+          acrName="${{ parameters.azureContainerRegistry }}"
+          dockerImage="${{ parameters.dockerImage }}"
 
           sudo apt-get install rpm
           wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.deb
           sudo dpkg -i trivy_0.49.1_Linux-64bit.deb
 
-          trivy i "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
+          trivy i "$acrName.azurecr.io/$dockerImage:$(Build.BuildNumber)"
         
