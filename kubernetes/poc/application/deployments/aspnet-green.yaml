@@ -39,7 +39,7 @@ spec:
                 - pool1
       containers:
         - name: aspnet-app
-          image: httpd #"pocacr2024.azurecr.io/application:v2"
+          image: "pocacr2024.azurecr.io/application:v2"
           env:
             - name: ASPNETCORE_URLS
               value: "http://+:80"
