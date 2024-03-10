@@ -79,6 +79,7 @@ jobs:
 
 - job: "ManualApproval"
   timeoutInMinutes: 60
+  dependsOn: BuildAndPushDockerImage
   pool: server
   displayName: "Approve Deploy to AKS"
   steps:
@@ -89,7 +90,7 @@ jobs:
 
 - job: "AKSDeployment"
   displayName: "AKS Deployment"
-
+  dependsOn: ManualApproval
   steps:
     - task: KubectlInstaller@0
       inputs:
@@ -124,8 +125,9 @@ jobs:
 
 - job: "ApprovalToSwitchTraffic"
   timeoutInMinutes: 60
+  dependsOn: AKSDeployment
   pool: server
-  displayName: "Switch traffic to Green"
+  displayName: "Approve Switch traffic to Green"
   steps:
     - task: ManualValidation@0
       inputs:
@@ -134,7 +136,7 @@ jobs:
 
 - job: "Switchtraffic"
   displayName: "Switch traffic to green"
-
+  dependsOn: ApprovalToSwitchTraffic
   steps:
 
     - task: AzureCLI@2
