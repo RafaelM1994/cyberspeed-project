@@ -29,6 +29,7 @@ $Env:TF_VAR_AZURE_CLIENT_SECRET = "value"
 $Env:TF_VAR_AZURE_SUBSCRIPTION_ID = "value"
 $Env:TF_VAR_AZURE_TENANT_ID = "value"
 ```
+Note: Some variables above will only be available when you Deploy terraform initial infrastructure, which will be shown in the step 1.1
 
 
 > Grant "Contributor" and "User Access Administrator" permissions to the service principal for it to create the resources and to grant permissions to AKS to access the ACR
@@ -74,14 +75,14 @@ $Env:TF_VAR_AZURE_TENANT_ID = "value"
         ```bash
         az acr login --name "<YOURACRNAME>"
         ```
-    - Navigate to \container-images\application;
+    - Navigate to \azure-devops\images\docker\application;
     - Build the image with: 
       ```bash
       docker build -t "<YOURACRNAME>.azurecr.io/application:v2" . --no-cache
       ```
     - Push The image to the container registry:
       ```bash
-      docker push "pocacr2024.azurecr.io/web:v1"
+      docker push "<YOURACRNAME>.azurecr.io/application:v1"
       ```  
 
     The following steps will deploy the Kubernetes manifest files to AKS:
@@ -154,6 +155,8 @@ $Env:TF_VAR_AZURE_TENANT_ID = "value"
     - Pods to user service accounts other than the default: By default, all pods use a service account called "default" on each namespace, and this should be changed to make sure each pod will access only their own secrets and volumes, and nothing else. This lowers the surface of attack in case of an account compromise.
 
     - Remove mysql pods capabilities to make it more secure. 
+
+    - Add Authentication to Prometheus
   
   # Future Availability Improvements
 
@@ -163,7 +166,9 @@ $Env:TF_VAR_AZURE_TENANT_ID = "value"
 
     - More time is needed to finish ALL the manifest files to be deployed by Terraform, however, 2 modules (namespaces and ingresses) have been created to match the requirement of managing container configurations and deployments using IAC.
 
-
+  # Future Monitoring Improvements
+    - Finish Prometheus configuration, right now it is monitoring only itself;
+    - Integrate Prometheus with Grafana to generate graphs and logs.
 
 ## Naming Conventions
 
