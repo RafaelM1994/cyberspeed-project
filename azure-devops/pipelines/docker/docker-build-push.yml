@@ -1,0 +1,63 @@
+#if the build is triggered from pull request, it should not be deployed
+pr: none
+
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+
+  - name: ServiceConnection
+    default: "sc-poc-environment"
+    values: ["sc-poc-environment"]
+
+  - name: azureContainerRegistry
+    type: string
+
+  - name: dockerfileFolder
+    type: string
+    default: "application"
+
+  - name: dockerImage
+    type: string
+    default: "docker-image"
+
+  - name: dockerTag
+    type: string
+    default: "latest"
+
+
+jobs:
+- job: "BuildAndPushDockerImage"
+  displayName: "Build and Push Docker Image"
+
+  steps:
+
+    - task: AzureCLI@2
+      displayName: "Build and Push Docker Image"
+      inputs:
+        azureSubscription: '${{ parameters.ServiceConnection }}'
+        scriptType: 'ps'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+
+          $acrName = "${{ parameters.azureContainerRegistry }}"
+          $dockerImage = "${{ parameters.dockerImage }}"
+          $dockerTag = "${{ parameters.dockerTag }}"
+          $dockerfileFolder = "${{ parameters.dockerfileFolder }}" 
+
+          write-host "Logging into Azure Container Registry"
+          az acr login --name $acrName
+
+          cd .\azure-devops\images\docker\$dockerfileFolder
+          echo "current directory is $PWD"
+          ls
+          write-host "Building Docker Image"
+          docker build --no-cache  --tag "$dockerImage" --file "./Dockerfile" .
+
+          write-host "Tagging Docker Image"
+          docker tag "$dockerImage" "$acrName.azurecr.io/$dockerImage:$dockerTag"
+
+          write-host "Pushing Docker Image"
+          docker push "$acrName.azurecr.io/$dockerImage:$dockerTag"
