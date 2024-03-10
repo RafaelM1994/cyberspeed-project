@@ -55,9 +55,9 @@ spec:
             limits:
               memory: "128Mi"
               cpu: "500m"
-          # securityContext:
-          #   capabilities:
-          #     drop:
-          #       - ALL
-          #     add:
-          #       - NET_BIND_SERVICE
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
