@@ -57,7 +57,23 @@ jobs:
           docker build --no-cache  --tag "$dockerImage" --file "./Dockerfile" .
 
           write-host "Tagging Docker Image"
-          docker tag "$dockerImage" "$acrName.azurecr.io/$($dockerImage):$dockerTag"
+          docker tag "$dockerImage" "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
 
           write-host "Pushing Docker Image"
-          docker push "$acrName.azurecr.io/$($dockerImage):$dockerTag"
+          docker push "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
+
+    - task: Cmdline@2
+      displayName: 'Run Trivy Scan'
+      inputs:
+        script: |
+
+          $acrName = "${{ parameters.azureContainerRegistry }}"
+          $dockerImage = "${{ parameters.dockerImage }}"
+          $dockerTag = "${{ parameters.dockerTag }}"
+
+          sudo apt-get install rpm
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.49.1
+
+          trivy i "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
+        
