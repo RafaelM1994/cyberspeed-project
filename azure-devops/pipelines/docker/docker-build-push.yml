@@ -57,7 +57,7 @@ jobs:
           docker build --no-cache  --tag "$dockerImage" --file "./Dockerfile" .
 
           write-host "Tagging Docker Image"
-          docker tag "$dockerImage" "$acrName.azurecr.io/$dockerImage:$dockerTag"
+          docker tag "$dockerImage" "$acrName.azurecr.io/$($dockerImage):$dockerTag"
 
           write-host "Pushing Docker Image"
-          docker push "$acrName.azurecr.io/$dockerImage:$dockerTag"
+          docker push "$acrName.azurecr.io/$($dockerImage):$dockerTag"
