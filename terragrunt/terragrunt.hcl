@@ -30,5 +30,8 @@ generate "provider" {
         client_secret     = "${get_env("TF_VAR_AZURE_CLIENT_SECRET")}"
 
     }
+    provider "kubernetes" {
+      config_path = "~/.kube/config"
+    }
 EOF
 }
