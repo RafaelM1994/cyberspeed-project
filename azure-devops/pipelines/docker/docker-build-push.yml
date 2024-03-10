@@ -14,6 +14,7 @@ parameters:
 
   - name: azureContainerRegistry
     type: string
+    default: "pocacr2024"
 
   - name: dockerfileFolder
     type: string
@@ -22,10 +23,6 @@ parameters:
   - name: dockerImage
     type: string
     default: "docker-image"
-
-  - name: dockerTag
-    type: string
-    default: "latest"
 
 
 jobs:
@@ -78,4 +75,84 @@ jobs:
           acrName="${{ parameters.azureContainerRegistry }}"
           dockerImage="${{ parameters.dockerImage }}"
           trivy i "$acrName.azurecr.io/$dockerImage:$(Build.BuildNumber)"
-        
+
+
+- job: "ManualApproval"
+  timeoutInMinutes: 60
+  pool: server
+  displayName: "Approve Deploy to AKS"
+  steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: "$(users-to-notify)"
+        instructions: "Please review and approve deployment to AKS."
+
+- job: "AKSDeployment"
+  displayName: "AKS Deployment"
+
+  steps:
+    - task: KubectlInstaller@0
+      inputs:
+        kubectlVersion: 'latest'
+
+    - task: AzureCLI@2
+      displayName: "AKS deployment"
+      inputs:
+        azureSubscription: '${{ parameters.ServiceConnection }}'
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+
+          $acrName = "${{ parameters.azureContainerRegistry }}"
+          $dockerImage = "${{ parameters.dockerImage }}"
+
+          cd ".\kubernetes\poc\application\deployments"
+
+          #replace this content with the new image
+          $oldImage = (get-content .\aspnet-green.yaml | select-string "image").ToString().Split('"')[1]
+          $newImage = "$acrName.azurecr.io/$dockerImage:$(Build.BuildNumber)"
+
+          (Get-Content .\aspnet-green.yaml) | 
+          ForEach-Object { $_ -replace $oldImage, $newImage } | Set-Content .\aspnet-green.yaml
+
+          #Get AKS Credentials
+          az account set --subscription fbb48a5b-ad89-42fb-95ff-310456c612f4
+          az aks get-credentials --resource-group poc-rg-01 --name aks01 --overwrite-existing
+
+          #Apply the new image to the green deployment
+          kubectl apply -f .\aspnet-green.yaml
+
+- job: "ApprovalToSwitchTraffic"
+  timeoutInMinutes: 60
+  pool: server
+  displayName: "Switch traffic to Green"
+  steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: "$(users-to-notify)"
+        instructions: "Please review and approve switching traffic."        
+
+- job: "Switchtraffic"
+  displayName: "Switch traffic to green"
+
+  steps:
+
+    - task: AzureCLI@2
+      displayName: "Switch traffic to green"
+      inputs:
+        azureSubscription: '${{ parameters.ServiceConnection }}'
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+
+          $acrName = "${{ parameters.azureContainerRegistry }}"
+          $dockerImage = "${{ parameters.dockerImage }}"
+
+          cd ".\kubernetes\poc\application\services"
+
+          #Get AKS Credentials
+          az account set --subscription fbb48a5b-ad89-42fb-95ff-310456c612f4
+          az aks get-credentials --resource-group poc-rg-01 --name aks01 --overwrite-existing
+
+          #Apply the new image to the green deployment
+          kubectl apply -f .\aspnet-green.yaml
