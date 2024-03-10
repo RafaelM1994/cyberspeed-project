@@ -44,7 +44,6 @@ jobs:
 
           $acrName = "${{ parameters.azureContainerRegistry }}"
           $dockerImage = "${{ parameters.dockerImage }}"
-          $dockerTag = "${{ parameters.dockerTag }}"
           $dockerfileFolder = "${{ parameters.dockerfileFolder }}" 
 
           write-host "Logging into Azure Container Registry"
@@ -69,11 +68,10 @@ jobs:
 
           $acrName = "${{ parameters.azureContainerRegistry }}"
           $dockerImage = "${{ parameters.dockerImage }}"
-          $dockerTag = "${{ parameters.dockerTag }}"
 
           sudo apt-get install rpm
           wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.deb
-          sudo dpkg -i trivy_0.49.1
+          sudo dpkg -i trivy_0.49.1_Linux-64bit.deb
 
           trivy i "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
         
