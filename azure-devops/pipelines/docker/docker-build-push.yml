@@ -1,0 +1,164 @@
+#if the build is triggered from pull request, it should not be deployed
+pr: none
+
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+
+  - name: ServiceConnection
+    default: "sc-poc-environment"
+    values: ["sc-poc-environment"]
+
+  - name: azureContainerRegistry
+    type: string
+    default: "pocacr2024"
+
+  - name: dockerfileFolder
+    type: string
+    default: "application"
+
+  - name: dockerImage
+    type: string
+    default: "docker-image"
+
+
+jobs:
+- job: "BuildAndPushDockerImage"
+  displayName: "Build and Push Docker Image"
+
+  steps:
+
+    - task: AzureCLI@2
+      displayName: "Build and Push Docker Image"
+      inputs:
+        azureSubscription: '${{ parameters.ServiceConnection }}'
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+
+          $acrName = "${{ parameters.azureContainerRegistry }}"
+          $dockerImage = "${{ parameters.dockerImage }}"
+          $dockerfileFolder = "${{ parameters.dockerfileFolder }}" 
+
+          write-host "Logging into Azure Container Registry"
+          az acr login --name $acrName
+
+          cd .\azure-devops\images\docker\$dockerfileFolder
+          echo "current directory is $PWD"
+          ls
+          write-host "Building Docker Image"
+          docker build --no-cache  --tag "$dockerImage" --file "./Dockerfile" .
+
+          write-host "Tagging Docker Image"
+          docker tag "$dockerImage" "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
+
+          write-host "Pushing Docker Image"
+          docker push "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
+
+    - task: Cmdline@2
+      displayName: 'Install Trivy'
+      inputs:
+        script: |
+
+          sudo apt-get install rpm
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.49.1/trivy_0.49.1_Linux-64bit.deb
+          sudo dpkg -i trivy_0.49.1_Linux-64bit.deb
+
+    - task: Cmdline@2
+      displayName: 'Run Trivy Scan'
+      inputs:
+        script: |
+
+          acrName="${{ parameters.azureContainerRegistry }}"
+          dockerImage="${{ parameters.dockerImage }}"
+          trivy i "$acrName.azurecr.io/$dockerImage:$(Build.BuildNumber)"
+
+
+- job: "ManualApproval"
+  timeoutInMinutes: 60
+  dependsOn: BuildAndPushDockerImage
+  pool: server
+  displayName: "Approve Deploy to AKS"
+  steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: "$(users-to-notify)"
+        instructions: "Please review and approve deployment to AKS."
+
+- job: "AKSDeployment"
+  displayName: "AKS Deployment"
+  dependsOn: ManualApproval
+  steps:
+    - task: KubectlInstaller@0
+      inputs:
+        kubectlVersion: 'latest'
+
+    - task: AzureCLI@2
+      displayName: "AKS deployment"
+      inputs:
+        azureSubscription: '${{ parameters.ServiceConnection }}'
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+
+          $acrName = "${{ parameters.azureContainerRegistry }}"
+          $dockerImage = "${{ parameters.dockerImage }}"
+
+          cd .\kubernetes\poc\application\deployments
+
+          ls
+          #replace this content with the new image
+          $oldImage = (get-content .\aspnet-green.yaml | select-string "image").ToString().Split('"')[1]
+          $newImage = "$acrName.azurecr.io/$($dockerImage):$(Build.BuildNumber)"
+
+          (Get-Content .\aspnet-green.yaml) | 
+          ForEach-Object { $_ -replace $oldImage, $newImage } | Set-Content .\aspnet-green.yaml
+
+          #Get AKS Credentials
+          az account set --subscription fbb48a5b-ad89-42fb-95ff-310456c612f4
+          az aks get-credentials --resource-group poc-rg-01 --name aks01 --overwrite-existing
+
+          #Apply the new image to the green deployment
+          pwd
+          kubectl apply -f ./aspnet-green.yaml
+
+- job: "ApprovalToSwitchTraffic"
+  timeoutInMinutes: 60
+  dependsOn: AKSDeployment
+  pool: server
+  displayName: "Approve Switch traffic to Green"
+  steps:
+    - task: ManualValidation@0
+      inputs:
+        notifyUsers: "$(users-to-notify)"
+        instructions: "Please review and approve switching traffic."        
+
+- job: "Switchtraffic"
+  displayName: "Switch traffic to green"
+  dependsOn: ApprovalToSwitchTraffic
+  steps:
+
+    - task: AzureCLI@2
+      displayName: "Switch traffic to green"
+      inputs:
+        azureSubscription: '${{ parameters.ServiceConnection }}'
+        scriptType: 'pscore'
+        scriptLocation: 'inlineScript'
+        inlineScript: |
+
+          $acrName = "${{ parameters.azureContainerRegistry }}"
+          $dockerImage = "${{ parameters.dockerImage }}"
+
+          cd .\kubernetes\poc\application\services
+          ls
+
+          #Get AKS Credentials
+          az account set --subscription fbb48a5b-ad89-42fb-95ff-310456c612f4
+          az aks get-credentials --resource-group poc-rg-01 --name aks01 --overwrite-existing
+
+          #Apply the new image to the green deployment
+          pwd
+          kubectl apply -f ./aspnet-green.yaml

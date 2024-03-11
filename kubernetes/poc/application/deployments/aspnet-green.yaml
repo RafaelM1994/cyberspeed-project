@@ -8,7 +8,7 @@ spec:
     matchLabels:
       app: aspnet-app-green
       deployment: green
-  replicas: 2
+  replicas: 1
   template:
     metadata:
       labels:
@@ -39,7 +39,7 @@ spec:
                 - pool1
       containers:
         - name: aspnet-app
-          image: httpd #"pocacr2024.azurecr.io/application:v2"
+          image: "pocacr2024.azurecr.io/application:v2"
           env:
             - name: ASPNETCORE_URLS
               value: "http://+:80"
@@ -55,9 +55,9 @@ spec:
             limits:
               memory: "128Mi"
               cpu: "500m"
-          # securityContext:
-          #   capabilities:
-          #     drop:
-          #       - ALL
-          #     add:
-          #       - NET_BIND_SERVICE
+          securityContext:
+            capabilities:
+              drop:
+                - ALL
+              add:
+                - NET_BIND_SERVICE
